@@ -1,0 +1,86 @@
+#!/bin/bash
+
+# --------------------------- DEFENITIONS --------------------------------------------
+
+# read var from stdinput into variable
+# scanf "What is your name: " NAME [--required][default_value]
+scanf() { 
+	read -p "$1" INPUT
+
+	# if set 3rd parameter as required and after read var is empty
+	if [[ $3 = "--required" ]] && [[ -z $INPUT ]]; then
+		scanf "$1" $2 --required
+	fi
+
+	# if 3rd (default value) parameter exists and after read var is empty
+	if [[ -n $3 ]] && [[ -z $INPUT ]]; then
+		export $2="$3"
+		return
+	fi
+
+	export $2="$INPUT"
+}
+
+replace() {
+	sed -i '' "s/$1=.*/$1=$2/" "$3"
+}
+
+# \e[3<ANSI>;<SGR>m
+
+BLACK="\e[30m"
+RED="\e[31m"
+RED_BG="\e[41m"
+WHITE="\e[37m"
+WHITE_BG="\e[47m"
+UNDERLINE="\e[4m"
+ITALIC="\e[3m"
+BOLD="\e[1m"
+RESET="\e[0m"
+
+# --------------------------- START --------------------------------------------
+
+printf "\n${WHITE_BG}${BLACK} Please select mode: ${RESET}"
+printf "\n\n"
+printf "  1: Install new project\n"
+printf "  2: Init existing project\n\n"
+scanf "Select mode [1]/2 : " MODE 1
+
+if [[ ! $MODE =~ [1-2] ]]; then # if mode is empty or not 1 or 2
+	MODE=1 # set mode = 1
+fi
+
+printf "\n---------------------------------\n\n"
+
+if [[ $MODE = 1 ]]; then # install new project
+	printf "${WHITE_BG}${BLACK} Installing a new project ${RESET}\n\n"
+	scanf "Github Repo Url: " GITHUB_URL --required
+	rm -rf .git
+	git init
+	git remote add origin $GITHUB_URL
+	git submodule add git@github.com:coder-packages/laradock.git
+else # init existing project
+	printf "${WHITE_BG}${BLACK} Initialize existing project ${RESET}\n\n"
+fi
+
+scanf "Project Name: " PROJECT_NAME --required
+
+ENVFILE=laradock/.env
+cp laradock/env-example $ENVFILE
+
+replace "COMPOSE_PROJECT_NAME" "$PROJECT_NAME" $ENVFILE
+
+DEFAULT_CONTAINERS="workspace nginx php-fpm postgres"
+scanf "Please select docker containers ($DEFAULT_CONTAINERS): " CONTAINERS "$DEFAULT_CONTAINERS"
+replace "CONTAINERS" "$CONTAINERS" Makefile
+
+scanf "Please select app code path (www/code): " APP_CODE_PATH "www/code"
+APP_CODE_PATH=$(echo $APP_CODE_PATH | sed "s/\//\\\\\//g")
+replace "APP_CODE_PATH_HOST" "..\\/$APP_CODE_PATH" $ENVFILE
+replace "PROJECT_PATH" "$APP_CODE_PATH" Makefile
+
+printf "\n${WHITE_BG}${BLACK} FINISH ${RESET}\n"
+printf "\n---------------------------------\n\n"
+printf "You can change configuration in ${WHITE_BG}${BLACK} $ENVFILE ${RESET} and run ${WHITE_BG}${BLACK} make up ${RESET}\n"
+
+# clone laradock
+# setup project
