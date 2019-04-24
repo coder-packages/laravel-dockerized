@@ -4,7 +4,7 @@ PARAMS=$(filter-out $@, $(MAKECMDGOALS))
 EXEC=@$(COMPOSE) exec --user=laradock workspace
 EXEC_ROOT=@$(COMPOSE) exec --user=root workspace
 PROJECT_PATH=www/code
-PROJECT_NAME=laratemp
+PROJECT_NAME=
 CONTAINERS=workspace nginx php-fpm postgres
 
 .PHONY: artisan tinker composer php yarn npm
