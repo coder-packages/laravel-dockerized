@@ -53,21 +53,27 @@ printf "\n---------------------------------\n\n"
 
 if [[ $MODE = 1 ]]; then # install new project
 	printf "${WHITE_BG}${BLACK} Installing a new project ${RESET}\n\n"
-	scanf "Github Repo Url: " GITHUB_URL --required
+	scanf "Github Repo Url for project: " GITHUB_URL
 	rm -rf .git
 	git init
-	git remote add origin $GITHUB_URL
-	git submodule add git@github.com:coder-packages/laradock.git
+	if [[ -n $GITHUB_URL ]]; then # if GITHUB_URL is not empty
+		git remote add origin $GITHUB_URL
+	fi
+
+	LARADOCK_PATH=docker
+	
+	git submodule add git@github.com:coder-packages/laradock.git $LARADOCK_PATH
 else # init existing project
 	printf "${WHITE_BG}${BLACK} Initialize existing project ${RESET}\n\n"
 fi
 
 scanf "Project Name: " PROJECT_NAME --required
 
-ENVFILE=laradock/.env
-cp laradock/env-example $ENVFILE
+ENVFILE=$LARADOCK_PATH/.env
+cp $LARADOCK_PATH/env-example $ENVFILE
 
 replace "COMPOSE_PROJECT_NAME" "$PROJECT_NAME" $ENVFILE
+replace "PROJECT_NAME" "$PROJECT_NAME" Makefile
 
 DEFAULT_CONTAINERS="workspace nginx php-fpm postgres"
 scanf "Please select docker containers ($DEFAULT_CONTAINERS): " CONTAINERS "$DEFAULT_CONTAINERS"
@@ -78,9 +84,8 @@ APP_CODE_PATH=$(echo $APP_CODE_PATH | sed "s/\//\\\\\//g")
 replace "APP_CODE_PATH_HOST" "..\\/$APP_CODE_PATH" $ENVFILE
 replace "PROJECT_PATH" "$APP_CODE_PATH" Makefile
 
+replace "COMPOSE" "docker-compose -f \\.\\/$LARADOCK_PATH\\/docker-compose\\.yml --project-directory \\.\\/$LARADOCK_PATH" Makefile
+
 printf "\n${WHITE_BG}${BLACK} FINISH ${RESET}\n"
 printf "\n---------------------------------\n\n"
 printf "You can change configuration in ${WHITE_BG}${BLACK} $ENVFILE ${RESET} and run ${WHITE_BG}${BLACK} make up ${RESET}\n"
-
-# clone laradock
-# setup project

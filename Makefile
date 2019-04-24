@@ -1,9 +1,10 @@
-COMPOSE=docker-compose -f ./laradock/docker-compose.yml --project-directory ./laradock
+COMPOSE=docker-compose -f ./docker/docker-compose.yml --project-directory ./docker
 DOCKER=docker
 PARAMS=$(filter-out $@, $(MAKECMDGOALS))
 EXEC=@$(COMPOSE) exec --user=laradock workspace
 EXEC_ROOT=@$(COMPOSE) exec --user=root workspace
 PROJECT_PATH=www/code
+PROJECT_NAME=laratemp
 CONTAINERS=workspace nginx php-fpm postgres
 
 .PHONY: artisan tinker composer php yarn npm
@@ -22,7 +23,13 @@ down:
 
 # docker-compose start
 start:
-	@$(COMPOSE) down -v
+	@if [ $(shell $(DOCKER) ps --filter name=^/${PROJECT_NAME}_ | grep ${PROJECT_NAME}_ > /dev/null; echo $$?) -eq 0 ]; then \
+		echo "Already started"; \
+	elif [ $(shell $(DOCKER) ps -a --filter name=^/${PROJECT_NAME}_ | grep ${PROJECT_NAME}_ > /dev/null; echo $$?) -eq 0 ]; then \
+		$(COMPOSE) start; \
+	else \
+		make up; \
+	fi
 
 # docker-compose stop
 stop:
@@ -35,6 +42,10 @@ ps:
 # docker-compose top
 top:
 	@$(COMPOSE) top
+
+# docker-compose logs
+logs:
+	@$(COMPOSE) logs -f $(PARAMS)
 
 # open shell in php container
 bash:
@@ -87,7 +98,7 @@ sync:
 test:
 	$(EXEC) $(PROJECT_PATH)/vendor/phpunit/phpunit/phpunit $(PARAMS)
 
-log:
+laravel/log:
 	tail -f $(PROJECT_PATH)/storage/logs/laravel.log
 
 # MAGIC - This just accepts all targets and silences, need this for the exec command
