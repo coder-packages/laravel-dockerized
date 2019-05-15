@@ -26,7 +26,7 @@ start:
 	@if [ $(shell $(DOCKER) ps --filter name=^/${PROJECT_NAME}_ | grep ${PROJECT_NAME}_ > /dev/null; echo $$?) -eq 0 ]; then \
 		echo "Already started"; \
 	elif [ $(shell $(DOCKER) ps -a --filter name=^/${PROJECT_NAME}_ | grep ${PROJECT_NAME}_ > /dev/null; echo $$?) -eq 0 ]; then \
-		$(COMPOSE) start; \
+		$(COMPOSE) start ${CONTAINERS}; \
 	else \
 		make up; \
 	fi
